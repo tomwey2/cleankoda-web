@@ -58,7 +58,7 @@ def create_issue_fetch_node(runtime: RuntimeSettings):
                     issue_read_comments_at,
                 )
                 issue_read_comments_at = datetime.now()
-                pr_review_message = _fetch_pr_review_info(vcs, state, issue.id)
+                pr_review_message = await _fetch_pr_review_info(vcs, state, issue.id)
 
             if issue_is_active and issue_from_todo:
                 # if the issue is new and has the state "todo" then move it to "in progress"
@@ -124,7 +124,7 @@ async def _resolve_issue(issue_id: str | None, its: IssueTrackingSystem) -> Issu
     return issue
 
 
-def _fetch_pr_review_info(vcs: VersionControlSystem, state: AgentState, issue_id: str) -> str:
+async def _fetch_pr_review_info(vcs: VersionControlSystem, state: AgentState, issue_id: str) -> str:
     """
     Fetch PR review info if a PR exists for the issue.
 
@@ -139,12 +139,12 @@ def _fetch_pr_review_info(vcs: VersionControlSystem, state: AgentState, issue_id
     repo_pr_number = state.get("repo_pr_number")
     pr = None
     if repo_pr_number:
-        pr = vcs.get_pr(repo_pr_number)
+        pr = await vcs.get_pr(repo_pr_number)
 
     if not pr or pr.state in ["APPROVED", "MERGED", "CLOSED"]:
         return ""  # besser: wenn Approved dann issue auf done schieben!
 
-    is_approved, rejection_reviews, code_comments = vcs.get_pr_review_status(pr.number)
+    is_approved, rejection_reviews, code_comments = await vcs.get_pr_review_status(pr.number)
 
     if is_approved:
         logger.info("PR #%d for issue %s is approved", pr.number, issue_id)
